@@ -7,11 +7,11 @@ body {
 	
 div.dragdrop {
 	background-color: #FFFFFF ;
-	bottom: 50px ;
-	left: 50px ;
+	bottom: 0px ;
+	left: 0px ;
 	position: fixed ;
-	right: 50px ;
-	top: 50px ;
+	right: 0px ;
+	top: 0px ;
 	}
 	
 div.bucket {
