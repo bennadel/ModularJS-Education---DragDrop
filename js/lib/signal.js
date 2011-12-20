@@ -18,7 +18,9 @@ define(
 			this.eventType = eventType;
 
 			// Define the subscribers that are bound to this event.
-			this.callbacks = [];
+			// Each subscriber will have a callback and a context
+			// associated with it.
+			this.subscribers = [];
 
 			// Return this object reference.
 			return( this );
@@ -51,10 +53,13 @@ define(
 		Signal.prototype = {
 
 			// I bind a subscriber for this event.
-			bind: function( callback ){
+			bind: function( callback, context ){
 
-				// Add this callback to the subscribers.
-				this.callbacks.push( callback );
+				// Add this subscriber to the subscribers.
+				this.subscribers.push({
+					callback: callback,
+					context: (context || window)
+				});
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -80,10 +85,13 @@ define(
 				eventArguments.unshift( event );
 
 				// Publish the event to all of the subscribers.
-				for (var i = 0 ; i < this.callbacks.length ; i++){
+				for (var i = 0 ; i < this.subscribers.length ; i++){
  					
 					// Publish event.
-					this.callbacks[ i ].apply( this.context, eventArguments );
+					this.subscribers[ i ].callback.apply( 
+						this.subscribers[ i ].context,
+						eventArguments
+					);
 					
  				}
 				
@@ -98,23 +106,13 @@ define(
 				
 				// Remove all instances of this callback from the 
 				// collection of subscribers.
-				this.callbacks = $.map(
-					this.callbacks,
-					function( thisCallback ){
+				this.subscribers = $.map(
+					this.subscribers,
+					function( subscriber ){
 
 						// Check to see if this callback is one of
-						// the ones we need to unbind. We are including
-						// a check for GUID value in case this function
-						// was proxies in jQuery.
-						if (
-								(thisCallback === callback) 
-							||
-								(
-									thisCallback.hasOwnProperty( "guid" ) &&
-									callback.hasOwnProperty( "guid" ) &&
-									(thisCallback.guid === callback.guid) 
-								) 
-							){
+						// the ones we need to unbind.
+						if (subscriber.callback === callback){
 						
 							// Return null to unsubscriber.
 							return( null );
@@ -122,7 +120,7 @@ define(
 						} else {
 
 							// We are keeping this subscriber.
-							return( thisCallback );
+							return( subscriber );
 
 						}
 

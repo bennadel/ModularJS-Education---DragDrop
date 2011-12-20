@@ -157,9 +157,7 @@ define(
 			
 				// Bind to the movements of the item so that we can
 				// track its movement over the dropzone.
-				item.events.moved.bind(
-					$.proxy( this.handleItemMoved, this )
-				);
+				item.events.moved.bind( this.handleItemMoved, this );
 				
 				// Return this object reference for method chaining.
 				return( this );
