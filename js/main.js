@@ -1,9 +1,9 @@
 
 // Small prototype hack just to get unshift working in IE.
-if (!Array.prototype.hasOwnProperty( "unshift" )){
+if (!Array.prototype.hasOwnProperty( "unshift2" )){
 
 	// Define the unshift shim.
-	Array.prototype.unshift = function(){
+	Array.prototype.unshift2 = function(){
 		
 		// Create a set of arguments to be used in the underlying
 		// splice() method call.
