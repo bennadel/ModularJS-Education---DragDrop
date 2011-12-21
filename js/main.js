@@ -1,4 +1,31 @@
 
+// Small prototype hack just to get unshift working in IE.
+if (!Array.prototype.hasOwnProperty( "unshift" )){
+
+	// Define the unshift shim.
+	Array.prototype.unshift = function(){
+		
+		// Create a set of arguments to be used in the underlying
+		// splice() method call.
+		var spliceArguments = Array.prototype.slice.call( arguments );
+		
+		// Add the zero for index and delete count. This will convert
+		// the unshift() arguments collection into a collection that
+		// can be used with spliec();
+		spliceArguments.splice( 0, 0, 0, 0 );
+		
+		// Splice the unshifted elements on the array.
+		Array.prototype.splice.apply( this, spliceArguments );
+	
+	};
+
+}
+
+
+// ----------------------------------------------------------- //
+// ----------------------------------------------------------- //
+
+
 // Define the paths to be used in the script mappings. Also, define
 // the named module for certain libraries that are AMD compliant.
 require.config({
