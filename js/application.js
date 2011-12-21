@@ -3,48 +3,25 @@
 define(
 	[
 		"jquery",
-		"view/agent",
-		"view/bucket"
+		"controller/dragdrop"
 	],
-	function( $, Agent, Bucket ){
+	function( $, DragDrop ){
 	
 	
+		// I am the application constructor.
 		function Application(){
 
-			this.stage = $( document );
-			
-			this.container = $( "div.dragdrop" );
-			
-			
-			var a = new Agent( this.stage, 1 );
-			a.attachContainer( this.container );
-			
-			var b = new Bucket();
-			b.attachContainer( this.container );
-			
-			
-			a.events.dragStarted.bind(
-				function(){
-
-					b.startTracking( a );
-				
-				}
-			);
-			
-			a.events.dragStopped.bind(
-				function(){
-					
-					b.stopTracking( a );
-					
-				}
+			// Create a new controller for our drag-drop interface.
+			var dragDrop = new DragDrop(
+				$( document ),
+				$( "div.dragdrop" )
 			);
 
 		}
 		
 		
-		Application.prototype = {
-			
-		};
+		// Define the class methods.
+		Application.prototype = {};
 		
 	
 		// -------------------------------------------------- //
