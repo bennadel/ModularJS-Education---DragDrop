@@ -49,6 +49,7 @@ div.bucket > ul.dropzone {
 
 div.bucket > ul.dropzone.activated {
 	background-color: #FFFFFF ;
+	border-color: #FF0066 ;
 	}
 
 div.bucket > ul.dropzone > li {
