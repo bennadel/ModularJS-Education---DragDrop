@@ -83,13 +83,23 @@ define(
 				
 				// Prepend the event to the arguments.
 				eventArguments.unshift( event );
+				
+				// Slice off the active subscribers. This allows us 
+				// to keep the same subscriber list even if the 
+				// callbacks of one subscriber try to unsubscribe the
+				// callbacks of anotehr subscriber.
+				//
+				// NOTE: This prevents a callback from stopping 
+				// "immediate propagation," which is probably what we
+				// want in an event system.
+				var activeSubscribers = this.subscribers.slice();
 
 				// Publish the event to all of the subscribers.
-				for (var i = 0 ; i < this.subscribers.length ; i++){
+				for (var i = 0 ; i < activeSubscribers.length ; i++){
  					
 					// Publish event.
-					this.subscribers[ i ].callback.apply( 
-						this.subscribers[ i ].context,
+					activeSubscribers[ i ].callback.apply( 
+						activeSubscribers[ i ].context,
 						eventArguments
 					);
 					
