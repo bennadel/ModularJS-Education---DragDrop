@@ -37,7 +37,10 @@ define(
 			this.dom.count.text( this.itemCount );
 			
 			// Set the dropzone region. This will be used to expedite
-			// the testing of items over the dropzone.
+			// the testing of items over the dropzone. The dimensions
+			// of the dropzone will be calculated when the dropzone
+			// is attached to a container (which is the only time it 
+			// has a phsyical dimension).
 			this.dropzoneRegion = {
 				left: 0,
 				top: 0,
@@ -50,8 +53,8 @@ define(
 			
 			// Create an event surface.
 			this.events = {};
-			this.events.dropzoneEntered = signalFactory( "dropzoneEntered" );
-			this.events.dropzoneLeft = signalFactory( "dropzoneLeft" );
+			this.events.dropped = signalFactory( "dropped" );
+			this.events.popped = signalFactory( "popped" );
 			
 			// Return this object reference.
 			return( this );
@@ -75,24 +78,9 @@ define(
 				// Add the target to the new container.
 				this.dom.container.append( this.dom.target );
 				
-				// Return this object reference for method chaining.
-				return( this );
-				
-			},
-			
-			
-			// I calculate the region of the dropzone within the 
-			// current container.
-			calculateDropzoneRegion: function(){
-			
-				// Get the position of the dropzone in the document.
-				var position = this.dom.dropzone.offset();
-				
-				// Set the dimensions of the region.
-				this.dropzoneRegion.left = position.left;
-				this.dropzoneRegion.top = position.top;
-				this.dropzoneRegion.width = (this.dom.dropzone.width() || 0);
-				this.dropzoneRegion.height = (this.dom.dropzone.height() || 0);
+				// Calculate the dimensions and location of the 
+				// rendered dropzone region.
+				this.updateDropzoneRegion(); 
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -113,9 +101,8 @@ define(
 				this.dom.target.detach();
 				
 				// Reset the dropzone region dimentions since the 
-				// dropzone is no longer rendered.
-				this.dropzoneRegion.width = 0;
-				this.dropzoneRegion.height = 0;
+				// dropzone is no longer being rendered physically.
+				this.updateDropzoneRegion(); 
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -123,41 +110,183 @@ define(
 			},
 			
 			
-			// I handle the move event for an item.
-			handleItemMoved: function( event, left, top ){
-			
+			// I handle the drag-started event for an item that is
+			// contained within the local view collection.
+			handleItemDragStarted: function( event ){
+				
+				// Get the item that is being dragged.
 				var item = event.context;
 				
-				console.log( this.isDroppable( item ) );
+				// Pop the item out of the local collection.
+				this.popItem( item );
+				
+				// Return this object reference for method chaining.
+				return( this );
+			
+			},
+			
+			
+			// I handle the drag-stopped event for an item being 
+			// tracked. If an item is stopped over the dropzone, we 
+			// will announce a dropped event.
+			handleItemDragStopped: function( event ){
+			
+				// Get the item that has stopped moving.
+				var item = event.context;
+				
+				// Get the offset of the item (this includes the 
+				// item's dimensions and location).
+				var offset = item.getOffset();
+				
+				// Check to see if the item has been dragged over the
+				// dropzone and is droppable.
+				if (this.isDroppable( offset )){
+
+					// Announce the dropped event.
+					this.events.dropped.trigger( item );
+					
+				}
+				
+				// Return this object reference for method chaining.
+				return( this );
+			
+			},
+			
+			
+			// I handle the move event for an item being tracked.
+			handleItemMoved: function( event, position, dimensions ){
+
+				// Put together the offset of the moved item.
+				var offset = {
+					left: position.left,
+					top: position.top,
+					width: dimensions.width,
+					height: dimensions.height
+				};
+			
+				// Check to see if the item is droppable.
+				if (this.isDroppable( offset )){
+
+					// Activate the dropzone.
+					this.dom.dropzone.addClass( "activated" );
+
+				} else {
+				
+					// Make sure the dropzone is [no longer] activated.
+					this.dom.dropzone.removeClass( "activated" );
+				
+				}
+				
+				// Return this object reference for method chaining.
+				return( this );
 				
 			},
 			
 			
 			// I check to see if the given item is over the drop zone.
-			isDroppable: function( item ){
+			isDroppable: function( offset ){
 			
-				var itemDimensions = item.getDimensions();
-				
-				var dropzoneDimensions = this.calculateDropzoneRegion()
-					.dropzoneRegion
-				;
-				
-				return(
-					(itemDimensions.left > dropzoneDimensions.left) &&
-					(itemDimensions.top > dropzoneDimensions.top) &&
-					(itemDimensions.left + itemDimensions.width) < (dropzoneDimensions.left + dropzoneDimensions.width) &&
-					(itemDimensions.top + itemDimensions.height) < (dropzoneDimensions.top + dropzoneDimensions.height)					
+				// Check to see if the width of the given offset is 
+				// fully contained within the dropzone.
+				var isWidthContained = (
+					(offset.left >= this.dropzoneRegion.left) &&
+					((offset.left + offset.width) <= (this.dropzoneRegion.left + this.dropzoneRegion.width))
 				);
 				
+				// Check to see if the height of the given offset is
+				// fully contained within the dropzone.
+				var isHeightContained = (
+					(offset.top >= this.dropzoneRegion.top) &&
+					((offset.top + offset.height) <= (this.dropzoneRegion.top + this.dropzoneRegion.height))
+				);
+				
+				// Return true if both the Width and the Height of 
+				// the given offset is fully contained within the 
+				// rendered dropzone region.
+				return( isWidthContained && isHeightContained );
+				
+			},
+			
+			
+			// I pop the item out of the local collection and return 
+			// it. This removes it from the local view container.
+			popItem: function( item ){
+			
+				// Detach the item from the local container.
+				item.detachContainer();
+				
+				// Stop tracking the drag start on the item.
+				item.events.dragStarted.unbind( this.handleItemDragStarted );
+			
+				// Get the local container that houses the given item.
+				var itemContainer = this.dom.dropzone.children()
+					.filter(
+						function( index ){
+							
+							// Return true if the controller associated
+							// with the local container is the item. 
+							return( $( this ).data( "controller" ) === item );
+							
+						}
+					)
+				;
+				
+				// Remove the local item container from the dropzone.
+				itemContainer.remove();
+				
+				// Update the count.
+				this.dom.count.text( --this.itemCount );
+				
+				// Announce the popped event.
+				this.events.popped.trigger( item );
+				
+				// Return the popped item.
+				return( item );
+				
+			},
+			
+			
+			// I push an item onto the collection of stored items, 
+			// adding it to the local view container.
+			pushItem: function( item ){
+				
+				// Create a new item container.
+				var itemContainer = $( "<li>" );
+				
+				// Store the related item reference in the data so 
+				// that we can use it later.
+				itemContainer.data( "controller", item );
+			
+				// Add it to the list of dropped items.
+				this.dom.dropzone.append( itemContainer );
+				
+				// Attach the item to the new container.
+				item.attachContainer( itemContainer );
+				
+				// Update the count.
+				this.dom.count.text( ++this.itemCount );
+				
+				// Bind to the item's drag start. If the item begins 
+				// to be dragged again, we want to remove it from the
+				// local container.
+				item.events.dragStarted.bind( this.handleItemDragStarted, this );
+				
+				// Return this object reference for method chaining.
+				return( this );
+			
 			},
 			
 			
 			// I start tracking the given item.
 			startTracking: function( item ){
-			
+
 				// Bind to the movements of the item so that we can
 				// track its movement over the dropzone.
 				item.events.moved.bind( this.handleItemMoved, this );
+				
+				// Bind to the end of the drag so that we can tell if
+				// the given item was dropped above our dropzone.
+				item.events.dragStopped.bind( this.handleItemDragStopped, this );
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -171,9 +300,41 @@ define(
 				// Stop tracking the movement of the item.
 				item.events.moved.unbind( this.handleItemMoved );
 				
+				// Stop tracking the drag of the item.
+				item.events.dragStopped.unbind( this.handleItemDragStopped );
+				
+				// Make sure the dropzone is deactivated (it may have 
+				// been activated by a drag-over of the item).
+				this.dom.dropzone.removeClass( "activated" );
+				
 				// Return this object reference for method chaining.
 				return( this );
 				
+			},
+			
+			
+			// I update the dimensions and location of the dropzone
+			// region. Since the dropzone only has a region when it
+			// is attached to a visible container, we may change 
+			// throughout the bucket lifecycle.
+			updateDropzoneRegion: function(){
+			
+				// Get the position of the dropzone in the document.
+				// 
+				// NOTE: For now, we're not going to worry about 
+				// containers; to keep it simple, we'll only use 
+				// the document for coordinates.
+				var position = this.dom.dropzone.offset();
+				
+				// Set the dimensions of the region.
+				this.dropzoneRegion.left = position.left;
+				this.dropzoneRegion.top = position.top;
+				this.dropzoneRegion.width = this.dom.dropzone.outerWidth();
+				this.dropzoneRegion.height = this.dom.dropzone.outerHeight();
+				
+				// Return this object reference for method chaining.
+				return( this );
+			
 			}
 			
 		

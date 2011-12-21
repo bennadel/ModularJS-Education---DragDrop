@@ -51,7 +51,16 @@ define(
 			// structure with left/top values. 
 			this.mouseOffsetDuringDrag = null;
 			
-			// Bind to the mouse click events to start and stop drag.
+			// I am the dimensions of the target. I will be calculated
+			// when the target is attached to a container (since this
+			// is the only time that it truly has dimensions).
+			this.dimensions = {
+				width: 0,
+				height: 0
+			};
+			
+			// Bind to the mouse click events to start and stop drag
+			// of the target.
 			this.dom.target
 				.mousedown(
 					$.proxy( this.handleMouseDown, this )
@@ -83,6 +92,9 @@ define(
 				// Add the target to the new container.
 				this.dom.container.append( this.dom.target );
 				
+				// Calculate the dimensions of the rendered target.
+				this.updateDimensions();
+				
 				// Return this object reference for method chaining.
 				return( this );
 				
@@ -101,16 +113,25 @@ define(
 				// relevant event bindings in place.
 				this.dom.target.detach();
 				
+				// Reset the dimensions since this item is not being
+				// rendered in a physical space.
+				this.updateDimensions();
+				
 				// Return this object reference for method chaining.
 				return( this );
 				
 			},
 			
 			
-			// I return the dimensions of the target.
-			getDimensions: function(){
+			// I return the dimensions and location of the target.
+			getOffset: function(){
 			
-				// Get the current position of the target.
+				// Get the current position of the target within the 
+				// greater document.
+				//
+				// NOTE: For now, we're not going to worry about how
+				// this relates to actual containers - we'll just use
+				// the page coordinates. 
 				var position = this.dom.target.offset();
 			
 				// Return the dimensions / position of the target on 
@@ -118,8 +139,8 @@ define(
 				return({
 					left: position.left,
 					top: position.top,
-					width: this.dom.target.width(),
-					height: this.dom.target.height()
+					width: this.dimensions.width,
+					height: this.dimensions.height
 				});
 			
 			},
@@ -134,6 +155,10 @@ define(
 				
 				// Get the current position of the agent that is 
 				// being clicked. 
+				//
+				// NOTE: Since the event returns the pageX and pageY
+				// in terms of the entire document, we'll also get 
+				// the target position in terms of the document.
 				var position = this.dom.target.offset();
 				
 				// Start the dragging, adjusting for the local offset
@@ -159,8 +184,11 @@ define(
 				var left = (event.pageX - this.mouseOffsetDuringDrag.left);
 				var top = (event.pageY - this.mouseOffsetDuringDrag.top);
 				
-				// Move the agent.
-				this.move( left, top );
+				// Move the agent to the mouse position.
+				this.move({
+					top: top,
+					left: left
+				});
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -181,16 +209,20 @@ define(
 			
 			
 			// I move the target to the given position.
-			move: function( left, top ){
+			move: function( position ){
 				
 				// Update the position of the agent on the stage.
 				this.dom.target.css({
-					left: (left + "px"),
-					top: (top + "px")
+					left: (position.left + "px"),
+					top: (position.top + "px")
 				});
 				
-				// Publish the event.
-				this.events.moved.trigger( left, top );
+				// Publish the event. Include both the updated 
+				// location as well as the dimensions of the target. 
+				this.events.moved.trigger(
+					position,
+					this.dimensions
+				);
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -206,16 +238,35 @@ define(
 				// position the agent as the mouse moves.
 				this.mouseOffsetDuringDrag = mouseOffsetDuringDrag;
 				
-				// Listen to the mouse movement on the stage.
+				// Listen to the mouse movement on the stage. We're 
+				// binding to the stage, rather than target since the
+				// mouse is likely to move faster than the target 
+				// (but never faster than the stage ;)). 
 				this.dom.stage.mousemove(
 					$.proxy( this.handleMouseMove, this )
 				);
 				
 				// Listen to the mouse-up on the stage (this will be 
-				// used to end the drag).
+				// used to end the drag). Just as with the move, we 
+				// need to track this on the stage, rather than the 
+				// target since the target might not be in place by
+				// the time the mouse is released.
 				this.dom.stage.mouseup(
 					$.proxy( this.handleMouseUp, this )
 				);
+				
+
+				// ------------------------------------------ //
+				// ------------------------------------------ //
+				// NOTE: This is a hack to help the shift in 
+				// context bewteen the absolutely positioned 
+				// container and the staticly positioned 
+				// container. I am not sure how to get around 
+				// this in a more elegant way.
+				this.move( this.dom.target.offset() );
+				// ------------------------------------------ //
+				// ------------------------------------------ //
+				
 				
 				// Publish the event.
 				this.events.dragStarted.trigger();
@@ -234,7 +285,7 @@ define(
 				// needed until drag is once again enabled.
 				this.mouseOffsetDuringDrag = null;
 				
-				// Stope listening to the mouse movement on the stage;
+				// Stop listening to the mouse movement on the stage;
 				// we are no longer dragging the agent.
 				this.dom.stage.unbind( "mousemove", this.handleMouseMove );
 				
@@ -244,6 +295,24 @@ define(
 				
 				// Publish the event.
 				this.events.dragStopped.trigger();
+				
+				// Return this object reference for method chaining.
+				return( this );
+				
+			},
+			
+			
+			// I update the dimensions of the target. Since we are 
+			// not sure what kind of container the target is being
+			// attached to, it's possible that it is being attached
+			// to a hidden / detached container which, itself, will
+			// not have any dimensions.
+			updateDimensions: function(){
+			
+				// Calculate the dimensions of the [MAYBE] rendered 
+				// target element.
+				this.dimensions.width = this.dom.target.outerWidth();
+				this.dimensions.height = this.dom.target.outerHeight();
 				
 				// Return this object reference for method chaining.
 				return( this );
