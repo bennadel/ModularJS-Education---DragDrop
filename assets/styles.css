@@ -55,11 +55,15 @@ div.bucket > ul.dropzone.activated {
 div.bucket > ul.dropzone > li {
 	float: left ;
 	height: 50px ;
-	margin: 5px 5px 5px 5px ;
+	margin: 0px 10px 10px 0px ;
 	padding: 0px 0px 0px 0px ;
 	width: 50px ;
 	}
 	
+div.bucket > ul.dropzone > li:nth-child(4) {
+	margin-right: 0px ;
+	}
+
 div.bucket > ul.dropzone > li > div.agent {
 	position: static ;
 	z-index: auto ;
@@ -80,6 +84,7 @@ div.bucket > div.count {
 
 div.agent {
 	background-color: #333333 ;
+	border: 1px solid #FFFFFF ;
 		-moz-border-radius: 3px 3px 3px 3px ;
 	border-radius: 3px 3px 3px 3px ;
 	cursor: pointer ;
