@@ -30,9 +30,20 @@ define(
 			this.agents = [];
 			this.agents.primaryKey = 0;
 			
-			// Add an agent and a bucket.
+			// Add an agent.
 			this.addAgent();
-			this.addBucket();
+			
+			// Add the left bucket.
+			this.addBucket({
+				left: "50px",
+				top: "50px"
+			});
+			
+			// Add the right bucket.
+			this.addBucket({
+				right: "50px",
+				top: "50px"
+			});
 			
 			// Return this object reference.
 			return( this );
@@ -69,7 +80,13 @@ define(
 			
 			
 			// I add a new bucket to the container.
-			addBucket: function(){
+			addBucket: function( initialPosition ){
+				
+				// Default the unused position properties.
+				initialPosition.top = (initialPosition.top || "auto");
+				initialPosition.right = (initialPosition.right || "auto");
+				initialPosition.bottom = (initialPosition.bottom || "auto");
+				initialPosition.left = (initialPosition.left || "auto");
 				
 				// Create a new bucket.
 				var bucket = new Bucket();
@@ -81,8 +98,12 @@ define(
 				bucket.events.dropped.bind( this.handleBucketDropped, this );
 				bucket.events.popped.bind( this.handleBucketPopped, this );
 				
-				// Attach the bucket to the primary container.
-				bucket.attachContainer( this.dom.container );
+				// Attach the bucket to the primary container with an
+				// initial position.
+				bucket.attachContainer( 
+					this.dom.container, 
+					initialPosition
+				);
 
 			},
 			
@@ -134,7 +155,7 @@ define(
 				bucket.pushItem( agent );
 				
 				// Add a new agent ... for funzies.
-				if (this.agents.primaryKey < 6){
+				if (this.agents.primaryKey < 15){
 				
 					this.addAgent();
 					
