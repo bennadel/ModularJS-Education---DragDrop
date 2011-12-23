@@ -82,7 +82,10 @@ define(
 			// I add a new bucket to the container.
 			addBucket: function( initialPosition ){
 				
-				// Default the unused position properties.
+				// Default the unused position properties. Likely,
+				// only two of the four will be used (ex. top + left).
+				// As such, the rest need to be put to auto so that
+				// the bucket doesn't become misshapen. 
 				initialPosition.top = (initialPosition.top || "auto");
 				initialPosition.right = (initialPosition.right || "auto");
 				initialPosition.bottom = (initialPosition.bottom || "auto");
