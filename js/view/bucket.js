@@ -26,6 +26,10 @@ define(
 			// Get a reference to the counter.
 			this.dom.count = this.dom.target.find( "div.count > span.value" );
 			
+			// Get a refrence to the ingredients.
+			this.dom.ingredients = this.dom.target.find( "div.ingredients span.value" );
+			this.dom.noIngredients = this.dom.target.find( "div.ingredients span.empty-value" );
+			
 			// I am the current container. This will be null unless the
 			// target is attached to a specific container.
 			this.dom.container = null;
@@ -66,8 +70,9 @@ define(
 		Bucket.prototype = {
 			
 			
-			// I attach the target to the given container.
-			attachContainer: function( container ){
+			// I attach the target to the given container. An optional
+			// position can be applied upon insert.
+			attachContainer: function( container, initialPosition ){
 			
 				// Detached the target from its current contianer.
 				this.detachContainer();
@@ -77,6 +82,17 @@ define(
 
 				// Add the target to the new container.
 				this.dom.container.append( this.dom.target );
+				
+				// Check to see if the position was provided.
+				if (initialPosition){
+
+					// I don't really know what the best way to do 
+					// this is, so for the time-being, I'll just
+					// defer to the wisdom of whatever was passed
+					// into the method.
+					this.dom.target.css( initialPosition );
+
+				}
 				
 				// Calculate the dimensions and location of the 
 				// rendered dropzone region.
@@ -237,6 +253,9 @@ define(
 				// Update the count.
 				this.dom.count.text( --this.itemCount );
 				
+				// Update the ingredients.
+				this.updateIngredients();
+				
 				// Announce the popped event.
 				this.events.popped.trigger( item );
 				
@@ -266,6 +285,9 @@ define(
 				// Update the count.
 				this.dom.count.text( ++this.itemCount );
 				
+				// Update the ingredients.
+				this.updateIngredients();
+				
 				// Bind to the item's drag start. If the item begins 
 				// to be dragged again, we want to remove it from the
 				// local container.
@@ -287,6 +309,12 @@ define(
 				// Bind to the end of the drag so that we can tell if
 				// the given item was dropped above our dropzone.
 				item.events.dragStopped.bind( this.handleItemDragStopped, this );
+				
+				// Recalculate the dimensions and location of the 
+				// rendered dropzone region. In case the window has
+				// changed size, we'll need to updated this at the
+				// start of drag.
+				this.updateDropzoneRegion(); 
 				
 				// Return this object reference for method chaining.
 				return( this );
@@ -335,6 +363,60 @@ define(
 				// Return this object reference for method chaining.
 				return( this );
 			
+			},
+			
+			
+			// I update the list of ingredients.
+			updateIngredients: function(){
+				
+				// Get the list of items in our dropzone.
+				var items = this.dom.dropzone.children();
+				
+				// If there are items, we can build a list of 
+				// ingredients; otherwise, we are empty.
+				if (items.length){
+
+					// Get the list of labels associated with each
+					// item in the dropzone.
+					var labels = items.map(
+						function(){
+							
+							// Get the controller for this contained
+							// item.
+							var controller = $( this ).data( "controller" );
+							
+							// Return this item's label.
+							return( controller.getLabel() );
+							
+						}
+					).get();
+					
+					// Set the ingredients and show them.
+					this.dom.ingredients
+						.text( labels.join( ", " ) )
+						.show()
+					;
+					
+					// Hide the empty message.
+					this.dom.noIngredients.hide();
+					
+				} else {
+					
+					// The dropzone is empty - reset and hide the
+					// list of ingredients.
+					this.dom.ingredients
+						.text( "" )
+						.hide()
+					;
+					
+					// Show the empty message.
+					this.dom.noIngredients.show();
+					
+				}
+				
+				// Return this object reference for method chaining.
+				return( this );
+				
 			}
 			
 		

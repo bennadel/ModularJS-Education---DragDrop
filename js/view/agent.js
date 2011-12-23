@@ -123,6 +123,14 @@ define(
 			},
 			
 			
+			// I return the label for the agent.
+			getLabel: function(){
+			
+				return( this.label );
+				
+			},
+			
+			
 			// I return the dimensions and location of the target.
 			getOffset: function(){
 			
